@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Joker Predictions</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>🎲 Joker Prediction App</h1>
+    <form method="POST" enctype="multipart/form-data">
+        <label>Upload CSV file (optional):</label>
+        <input type="file" name="file">
+        <button type="submit">Generate Predictions</button>
+    </form>
+
+    {% if predictions %}
+        <h2>Top 5 Predictions</h2>
+        <ul>
+        {% for combo, joker in predictions %}
+            <li>Numbers: {{ combo }} | Joker: {{ joker }}</li>
+        {% endfor %}
+        </ul>
+
+        <h2>🎯 Final Suggested Combination</h2>
+        <p>Numbers: {{ final[0] }} | Joker: {{ final[1] }}</p>
+    {% endif %}
+</body>
+</html>

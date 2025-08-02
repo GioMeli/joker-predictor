@@ -3,6 +3,7 @@ from flask import Flask, request, render_template
 import pandas as pd
 from collections import Counter
 import random
+import matplotlib.pyplot as plt
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -18,8 +19,27 @@ def analyze_frequencies(df):
     joker_counter = Counter(joker_numbers)
     return main_counter, joker_counter
 
+def plot_frequencies(counter, title, filename):
+    items = sorted(counter.items())
+    numbers = [item[0] for item in items]
+    frequencies = [item[1] for item in items]
+
+    plt.figure(figsize=(10, 5))
+    plt.bar(numbers, frequencies, color='skyblue')
+    plt.title(title)
+    plt.xlabel('Number')
+    plt.ylabel('Frequency')
+    plt.xticks(numbers, rotation=90)
+    plt.tight_layout()
+    plt.savefig(f"static/{filename}")
+    plt.close()
+
 def generate_prediction(df, num_predictions=5):
     main_counter, joker_counter = analyze_frequencies(df)
+
+    # Δημιουργία γραφημάτων
+    plot_frequencies(main_counter, "Main Number Frequencies", "main_number_frequencies.png")
+    plot_frequencies(joker_counter, "Joker Number Frequencies", "joker_number_frequencies.png")
 
     sorted_main = sorted(main_counter.items(), key=lambda x: x[1], reverse=True)
     sorted_joker = sorted(joker_counter.items(), key=lambda x: x[1], reverse=True)
@@ -82,7 +102,9 @@ def index():
 
         predictions, final_combination = generate_prediction(df)
 
-    return render_template('index.html', predictions=predictions, final=final_combination)
+    return render_template('index.html', predictions=predictions, final=final_combination,
+                           main_chart="main_number_frequencies.png",
+                           joker_chart="joker_number_frequencies.png")
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -38,7 +38,6 @@ def get_decade(num):
     return (num - 1) // 10
 
 def generate_prediction(df, num_predictions=5, seed_source=""):
-    # Δημιουργία σταθερού seed από το όνομα του αρχείου
     seed = int(hashlib.md5(seed_source.encode()).hexdigest(), 16) % (2**32)
     random.seed(seed)
 
@@ -62,14 +61,14 @@ def generate_prediction(df, num_predictions=5, seed_source=""):
     for _ in range(num_predictions):
         while True:
             selected_main = []
-            used_decades = set()
+            used_decades = Counter()
             candidates = hot_main + cold_main
             random.shuffle(candidates)
             for num in candidates:
                 decade = get_decade(num)
-                if decade not in used_decades:
+                if used_decades[decade] < 2:
                     selected_main.append(num)
-                    used_decades.add(decade)
+                    used_decades[decade] += 1
                 if len(selected_main) == 5:
                     break
             if len(selected_main) < 5:
@@ -123,4 +122,3 @@ def index():
 
 if __name__ == '__main__':
     app.run(debug=True)
-

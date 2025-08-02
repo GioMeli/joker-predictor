@@ -26,9 +26,16 @@ def generate_prediction(df, num_predictions=5):
     hot_joker = [int(num) for num, _ in joker_freq[:5]]
     cold_joker = [int(num) for num, _ in joker_freq[-5:]]
 
+    # Ορισμός αριθμών γενεθλίων (1–31 ημέρες και 1–12 μήνες)
+    birthday_numbers = set(range(1, 32)) | set(range(1, 13))
+
     predictions = []
     for _ in range(num_predictions):
-        selected = sorted(random.sample(hot_main, 3) + random.sample(cold_main, 2))
+        # Ενίσχυση πιθανότητας μη γενεθλιακών αριθμών
+        weighted_hot_main = hot_main + [num for num in hot_main if num not in birthday_numbers]
+        weighted_cold_main = cold_main + [num for num in cold_main if num not in birthday_numbers]
+
+        selected = sorted(random.sample(weighted_hot_main, 3) + random.sample(weighted_cold_main, 2))
         joker = random.choice(hot_joker + cold_joker)
         predictions.append((selected, joker))
 

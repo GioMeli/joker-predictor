@@ -2,7 +2,6 @@ import os
 from flask import Flask, request, render_template
 import pandas as pd
 from collections import Counter
-import random
 import matplotlib.pyplot as plt
 
 app = Flask(__name__)
@@ -23,7 +22,6 @@ def plot_frequencies(counter, title, filename):
     items = sorted(counter.items())
     numbers = [item[0] for item in items]
     frequencies = [item[1] for item in items]
-
     plt.figure(figsize=(10, 5))
     plt.bar(numbers, frequencies, color='skyblue')
     plt.title(title)
@@ -49,43 +47,24 @@ def generate_prediction(df, num_predictions=5):
     hot_joker = [int(num) for num, _ in sorted_joker[:5]]
     cold_joker = [int(num) for num, _ in sorted_joker[-5:]]
 
-    hot_main_weights = [main_counter[num] for num in hot_main]
-    cold_main_weights = [main_counter[num] for num in cold_main]
-    hot_joker_weights = [joker_counter[num] for num in hot_joker]
-    cold_joker_weights = [joker_counter[num] for num in cold_joker]
-
     birthday_numbers = set(range(1, 32)) | set(range(1, 13))
     MIN_SUM = 100
     MAX_SUM = 160
 
-    predictions = []
-    for _ in range(num_predictions):
-        while True:
-            weighted_hot_main = hot_main + [num for num in hot_main if num not in birthday_numbers]
-            weighted_cold_main = cold_main + [num for num in cold_main if num not in birthday_numbers]
-            weighted_hot_weights = hot_main_weights + [main_counter[num] for num in hot_main if num not in birthday_numbers]
-            weighted_cold_weights = cold_main_weights + [main_counter[num] for num in cold_main if num not in birthday_numbers]
+    # Επιλογή των 5 πιο συχνούς αριθμών
+    selected_main = sorted([num for num, _ in sorted_main[:5]])
+    total_sum = sum(selected_main)
 
-            selected = sorted(
-                random.choices(weighted_hot_main, weights=weighted_hot_weights, k=3) +
-                random.choices(weighted_cold_main, weights=weighted_cold_weights, k=2)
-            )
-            if MIN_SUM <= sum(selected) <= MAX_SUM:
-                break
+    # Αν δεν πληροί τα κριτήρια, δοκιμάζουμε με άλλους από τους cold
+    if not (MIN_SUM <= total_sum <= MAX_SUM):
+        selected_main = sorted(cold_main[:5])
+        total_sum = sum(selected_main)
 
-        joker_pool = hot_joker + cold_joker
-        joker_weights = hot_joker_weights + cold_joker_weights
-        joker = random.choices(joker_pool, weights=joker_weights, k=1)[0]
+    # Επιλογή του πιο συχνού Τζόκερ
+    selected_joker = sorted_joker[0][0]
 
-        predictions.append((selected, joker))
-
-    all_main = [num for combo, _ in predictions for num in combo]
-    all_jokers = [joker for _, joker in predictions]
-
-    final_main = sorted([num for num, _ in Counter(all_main).most_common(5)])
-    final_joker = Counter(all_jokers).most_common(1)[0][0]
-
-    return predictions, (final_main, final_joker)
+    predictions = [(selected_main, selected_joker)]
+    return predictions, (selected_main, selected_joker)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -99,12 +78,11 @@ def index():
             df = load_data(filepath)
         else:
             df = load_data("data/joker_results_updated.csv")
-
         predictions, final_combination = generate_prediction(df)
-
     return render_template('index.html', predictions=predictions, final=final_combination,
                            main_chart="main_number_frequencies.png",
                            joker_chart="joker_number_frequencies.png")
 
 if __name__ == '__main__':
     app.run(debug=True)
+

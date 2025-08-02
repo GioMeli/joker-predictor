@@ -50,6 +50,9 @@ def has_too_many_same_last_digits(numbers, max_allowed=2):
 def get_rare_single_digits(main_counter, threshold=5):
     return {num for num in range(1, 10) if main_counter.get(num, 0) < threshold}
 
+def get_low_freq_birthdays(main_counter, threshold=5):
+    return {num for num in range(1, 32) if main_counter.get(num, 0) < threshold}
+
 def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None):
     seed = int(hashlib.md5(seed_source.encode()).hexdigest(), 16) % (2**32)
     random.seed(seed)
@@ -72,6 +75,7 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
     seen_combinations = set()
 
     rare_single_digits = get_rare_single_digits(main_counter)
+    low_freq_birthdays = get_low_freq_birthdays(main_counter)
 
     for _ in range(num_predictions):
         attempt = 0
@@ -96,6 +100,10 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
                 continue
 
             if any(num in rare_single_digits for num in selected_main):
+                attempt += 1
+                continue
+
+            if sum(1 for num in selected_main if num in low_freq_birthdays) > 2:
                 attempt += 1
                 continue
 

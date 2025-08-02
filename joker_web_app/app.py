@@ -18,18 +18,18 @@ def analyze_frequencies(df):
     joker_counter = Counter(joker_numbers)
     return sorted(main_counter.items(), key=lambda x: x[1], reverse=True), sorted(joker_counter.items(), key=lambda x: x[1], reverse=True)
 
-def get_hot_and_cold(freq_list, top_n=10):
-    return freq_list[:top_n], freq_list[-top_n:]
-
 def generate_prediction(df, num_predictions=5):
     main_freq, joker_freq = analyze_frequencies(df)
+
     hot_main = [int(num) for num, _ in main_freq[:25]]
+    cold_main = [int(num) for num, _ in main_freq[-25:]]
     hot_joker = [int(num) for num, _ in joker_freq[:5]]
+    cold_joker = [int(num) for num, _ in joker_freq[-5:]]
 
     predictions = []
     for _ in range(num_predictions):
-        selected = sorted(random.sample(hot_main, 5))
-        joker = random.choice(hot_joker)
+        selected = sorted(random.sample(hot_main, 3) + random.sample(cold_main, 2))
+        joker = random.choice(hot_joker + cold_joker)
         predictions.append((selected, joker))
 
     all_main = [num for combo, _ in predictions for num in combo]

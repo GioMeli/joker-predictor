@@ -1,4 +1,5 @@
 import os
+import hashlib
 from flask import Flask, request, render_template
 import pandas as pd
 from collections import Counter
@@ -36,7 +37,11 @@ def plot_frequencies(counter, title, filename):
 def get_decade(num):
     return (num - 1) // 10
 
-def generate_prediction(df, num_predictions=5):
+def generate_prediction(df, num_predictions=5, seed_source=""):
+    # Δημιουργία σταθερού seed από το όνομα του αρχείου
+    seed = int(hashlib.md5(seed_source.encode()).hexdigest(), 16) % (2**32)
+    random.seed(seed)
+
     main_counter, joker_counter = analyze_frequencies(df)
 
     plot_frequencies(main_counter, "Main Number Frequencies", "main_number_frequencies.png")
@@ -107,9 +112,11 @@ def index():
             filepath = os.path.join(UPLOAD_FOLDER, file.filename)
             file.save(filepath)
             df = load_data(filepath)
+            seed_source = file.filename
         else:
             df = load_data("data/joker_results_updated.csv")
-        predictions, final_combination = generate_prediction(df)
+            seed_source = "default"
+        predictions, final_combination = generate_prediction(df, seed_source=seed_source)
     return render_template('index.html', predictions=predictions, final=final_combination,
                            main_chart="main_number_frequencies.png",
                            joker_chart="joker_number_frequencies.png")

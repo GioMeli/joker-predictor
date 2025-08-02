@@ -1,27 +1,90 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Joker Predictions</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <meta charset="UTF-8">
+    <title>🎲 Joker Prediction App</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f4f6f8;
+            margin: 40px;
+            color: #2c3e50;
+        }
+        h1, h2, h3 {
+            color: #34495e;
+        }
+        form {
+            margin-bottom: 30px;
+        }
+        input[type="file"] {
+            padding: 8px;
+            margin-right: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background: #ecf0f1;
+            margin: 8px 0;
+            padding: 12px;
+            border-left: 5px solid #3498db;
+            border-radius: 4px;
+        }
+        .chart {
+            margin-top: 40px;
+        }
+        img {
+            max-width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+    </style>
 </head>
 <body>
-    <h1>🎲 Joker Prediction App</h1>
+
+    <h1>🎯 Joker Prediction App</h1>
+
     <form method="POST" enctype="multipart/form-data">
-        <label>Upload CSV file (optional):</label>
+        <label><strong>Upload CSV file (optional):</strong></label>
         <input type="file" name="file">
         <button type="submit">Generate Predictions</button>
     </form>
 
     {% if predictions %}
-        <h2>Top 5 Predictions</h2>
+        <h2>🔢 Top 5 Predictions</h2>
         <ul>
-        {% for combo, joker in predictions %}
-            <li>Numbers: {{ combo }} | Joker: {{ joker }}</li>
-        {% endfor %}
+            {% for combo, joker in predictions %}
+                <li><strong>Numbers:</strong> {{ combo }} | <strong>Joker:</strong> {{ joker }}</li>
+            {% endfor %}
         </ul>
 
         <h2>🎯 Final Suggested Combination</h2>
-        <p>Numbers: {{ final[0] }} | Joker: {{ final[1] }}</p>
+        <p><strong>Numbers:</strong> {{ final[0] }} | <strong>Joker:</strong> {{ final[1] }}</p>
+
+        <div class="chart">
+            <h3>📊 Συχνότητα Κύριων Αριθμών</h3>
+            <img src="{{ url_for('static', filename=main_chart) }}" alt="Main Number Frequencies">
+        </div>
+
+        <div class="chart">
+            <h3>🎯 Συχνότητα Αριθμών Τζόκερ</h3>
+            <img src="{{ url_for('static', filename=joker_chart) }}" alt="Joker Number Frequencies">
+        </div>
     {% endif %}
+
 </body>
 </html>
+

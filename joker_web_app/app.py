@@ -2,6 +2,7 @@ import os
 from flask import Flask, request, render_template
 import pandas as pd
 from collections import Counter
+import random
 import matplotlib.pyplot as plt
 
 app = Flask(__name__)
@@ -51,20 +52,22 @@ def generate_prediction(df, num_predictions=5):
     MIN_SUM = 100
     MAX_SUM = 160
 
-    # Επιλογή των 5 πιο συχνούς αριθμών
-    selected_main = sorted([num for num, _ in sorted_main[:5]])
-    total_sum = sum(selected_main)
+    predictions = []
+    for _ in range(num_predictions):
+        while True:
+            selected_main = sorted(random.sample(hot_main, 3) + random.sample(cold_main, 2))
+            selected_main = [int(n) for n in selected_main]
+            if MIN_SUM <= sum(selected_main) <= MAX_SUM:
+                break
+        selected_joker = int(random.choice(hot_joker + cold_joker))
+        predictions.append((selected_main, selected_joker))
 
-    # Αν δεν πληροί τα κριτήρια, δοκιμάζουμε με άλλους από τους cold
-    if not (MIN_SUM <= total_sum <= MAX_SUM):
-        selected_main = sorted(cold_main[:5])
-        total_sum = sum(selected_main)
+    all_main = [num for combo, _ in predictions for num in combo]
+    all_jokers = [joker for _, joker in predictions]
+    final_main = sorted([int(num) for num, _ in Counter(all_main).most_common(5)])
+    final_joker = int(Counter(all_jokers).most_common(1)[0][0])
 
-    # Επιλογή του πιο συχνού Τζόκερ
-    selected_joker = sorted_joker[0][0]
-
-    predictions = [(selected_main, selected_joker)]
-    return predictions, (selected_main, selected_joker)
+    return predictions, (final_main, final_joker)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():

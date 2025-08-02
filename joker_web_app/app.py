@@ -107,6 +107,10 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
                 attempt += 1
                 continue
 
+            if all(num <= 31 for num in selected_main):
+                attempt += 1
+                continue
+
             selected_main = sorted(selected_main)
             total_sum = sum(selected_main)
             if not (MIN_SUM <= total_sum <= MAX_SUM):
@@ -183,4 +187,3 @@ def index():
 
 if __name__ == '__main__':
     app.run(debug=True)
-

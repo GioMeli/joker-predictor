@@ -37,7 +37,12 @@ def plot_frequencies(counter, title, filename):
 def get_decade(num):
     return (num - 1) // 10
 
-def generate_prediction(df, num_predictions=5, seed_source=""):
+def evaluate_prediction(predicted_main, predicted_joker, actual_main, actual_joker):
+    matched_main = len(set(predicted_main) & set(actual_main))
+    matched_joker = int(predicted_joker == actual_joker)
+    return matched_main, matched_joker
+
+def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None):
     seed = int(hashlib.md5(seed_source.encode()).hexdigest(), 16) % (2**32)
     random.seed(seed)
 
@@ -58,34 +63,44 @@ def generate_prediction(df, num_predictions=5, seed_source=""):
     MAX_SUM = 160
 
     predictions = []
+    seen_combinations = set()
+
     for _ in range(num_predictions):
-        while True:
+        attempt = 0
+        while attempt < 100:
             selected_main = []
             used_decades = Counter()
             candidates = hot_main + cold_main
             random.shuffle(candidates)
             for num in candidates:
                 decade = get_decade(num)
-                if used_decades[decade] < 2:  # Επιτρέπουμε έως 2 αριθμούς από την ίδια δεκάδα
+                if used_decades[decade] < 2:
                     selected_main.append(num)
                     used_decades[decade] += 1
                 if len(selected_main) == 5:
                     break
             if len(selected_main) < 5:
+                attempt += 1
                 continue
             selected_main = sorted(selected_main)
             total_sum = sum(selected_main)
-            if MIN_SUM <= total_sum <= MAX_SUM:
+            if not (MIN_SUM <= total_sum <= MAX_SUM):
+                attempt += 1
+                continue
+            selected_joker = int(random.choice(hot_joker + cold_joker))
+            combo_key = tuple(selected_main + [selected_joker])
+            if combo_key not in seen_combinations:
+                seen_combinations.add(combo_key)
+                predictions.append((selected_main, selected_joker))
                 break
-        selected_joker = int(random.choice(hot_joker + cold_joker))
-        predictions.append((selected_main, selected_joker))
+            attempt += 1
 
     all_main = [num for combo, _ in predictions for num in combo]
     all_jokers = [joker for _, joker in predictions]
     final_main = sorted([int(num) for num, _ in Counter(all_main).most_common(5)])
     final_joker = int(Counter(all_jokers).most_common(1)[0][0])
 
-    # Ισορροπία μονών/ζυγών (π.χ. 4 ζυγοί / 1 μονός)
+    # Ισορροπία μονών/ζυγών
     odd_count = sum(1 for n in final_main if n % 2 == 1)
     even_count = 5 - odd_count
     if abs(odd_count - even_count) > 2:
@@ -99,12 +114,25 @@ def generate_prediction(df, num_predictions=5, seed_source=""):
                     break
         final_main = sorted(final_main)
 
-    return predictions, (final_main, final_joker)
+    accuracy_report = []
+    if actual_draw:
+        actual_main, actual_joker = actual_draw
+        for combo, joker in predictions:
+            matched_main, matched_joker = evaluate_prediction(combo, joker, actual_main, actual_joker)
+            accuracy_report.append({
+                "prediction": combo,
+                "joker": joker,
+                "matched_main": matched_main,
+                "matched_joker": matched_joker
+            })
+
+    return predictions, (final_main, final_joker), accuracy_report
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     predictions = []
     final_combination = None
+    accuracy_report = []
     if request.method == 'POST':
         file = request.files.get('file')
         if file:
@@ -115,10 +143,21 @@ def index():
         else:
             df = load_data("data/joker_results_updated.csv")
             seed_source = "default"
-        predictions, final_combination = generate_prediction(df, seed_source=seed_source)
-    return render_template('index.html', predictions=predictions, final=final_combination,
+
+        # Προαιρετικά: ορισμός της τελευταίας πραγματικής κλήρωσης για αξιολόγηση
+        actual_draw = ([2, 10, 16, 21, 40], 15)
+
+        predictions, final_combination, accuracy_report = generate_prediction(
+            df, seed_source=seed_source, actual_draw=actual_draw
+        )
+
+    return render_template('index.html',
+                           predictions=predictions,
+                           final=final_combination,
                            main_chart="main_number_frequencies.png",
-                           joker_chart="joker_number_frequencies.png")
+                           joker_chart="joker_number_frequencies.png",
+                           accuracy=accuracy_report)
 
 if __name__ == '__main__':
     app.run(debug=True)
+

@@ -10,6 +10,11 @@ app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+def has_too_many_same_last_digits(numbers, max_allowed=2):
+    last_digits = [num % 10 for num in numbers]
+    digit_counts = Counter(last_digits)
+    return any(count > max_allowed for count in digit_counts.values())
+
 def load_data(csv_path):
     return pd.read_csv(csv_path)
 
@@ -45,15 +50,12 @@ def evaluate_prediction(predicted_main, predicted_joker, actual_main, actual_jok
 def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None):
     seed = int(hashlib.md5(seed_source.encode()).hexdigest(), 16) % (2**32)
     random.seed(seed)
-
     main_counter, joker_counter = analyze_frequencies(df)
-
     plot_frequencies(main_counter, "Main Number Frequencies", "main_number_frequencies.png")
     plot_frequencies(joker_counter, "Joker Number Frequencies", "joker_number_frequencies.png")
 
     sorted_main = sorted(main_counter.items(), key=lambda x: x[1], reverse=True)
     sorted_joker = sorted(joker_counter.items(), key=lambda x: x[1], reverse=True)
-
     hot_main = [int(num) for num, _ in sorted_main[:25]]
     cold_main = [int(num) for num, _ in sorted_main[-25:]]
     hot_joker = [int(num) for num, _ in sorted_joker[:5]]
@@ -61,7 +63,6 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
 
     MIN_SUM = 100
     MAX_SUM = 160
-
     predictions = []
     seen_combinations = set()
 
@@ -82,11 +83,17 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
             if len(selected_main) < 5:
                 attempt += 1
                 continue
+
+            if has_too_many_same_last_digits(selected_main):
+                attempt += 1
+                continue
+
             selected_main = sorted(selected_main)
             total_sum = sum(selected_main)
             if not (MIN_SUM <= total_sum <= MAX_SUM):
                 attempt += 1
                 continue
+
             selected_joker = int(random.choice(hot_joker + cold_joker))
             combo_key = tuple(selected_main + [selected_joker])
             if combo_key not in seen_combinations:
@@ -144,9 +151,7 @@ def index():
             df = load_data("data/joker_results_updated.csv")
             seed_source = "default"
 
-        # Προαιρετικά: ορισμός της τελευταίας πραγματικής κλήρωσης για αξιολόγηση
         actual_draw = ([2, 10, 16, 21, 40], 15)
-
         predictions, final_combination, accuracy_report = generate_prediction(
             df, seed_source=seed_source, actual_draw=actual_draw
         )

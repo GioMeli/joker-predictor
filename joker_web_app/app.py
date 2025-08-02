@@ -66,7 +66,7 @@ def generate_prediction(df, num_predictions=5, seed_source=""):
             random.shuffle(candidates)
             for num in candidates:
                 decade = get_decade(num)
-                if used_decades[decade] < 2:
+                if used_decades[decade] < 2:  # Επιτρέπουμε έως 2 αριθμούς από την ίδια δεκάδα
                     selected_main.append(num)
                     used_decades[decade] += 1
                 if len(selected_main) == 5:
@@ -85,7 +85,7 @@ def generate_prediction(df, num_predictions=5, seed_source=""):
     final_main = sorted([int(num) for num, _ in Counter(all_main).most_common(5)])
     final_joker = int(Counter(all_jokers).most_common(1)[0][0])
 
-    # Ισορροπία μονών/ζυγών
+    # Ισορροπία μονών/ζυγών (π.χ. 4 ζυγοί / 1 μονός)
     odd_count = sum(1 for n in final_main if n % 2 == 1)
     even_count = 5 - odd_count
     if abs(odd_count - even_count) > 2:

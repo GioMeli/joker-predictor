@@ -16,35 +16,47 @@ def analyze_frequencies(df):
     joker_numbers = df["Joker"].values
     main_counter = Counter(main_numbers)
     joker_counter = Counter(joker_numbers)
-    return sorted(main_counter.items(), key=lambda x: x[1], reverse=True), sorted(joker_counter.items(), key=lambda x: x[1], reverse=True)
+    return main_counter, joker_counter
 
 def generate_prediction(df, num_predictions=5):
-    main_freq, joker_freq = analyze_frequencies(df)
+    main_counter, joker_counter = analyze_frequencies(df)
 
-    hot_main = [int(num) for num, _ in main_freq[:25]]
-    cold_main = [int(num) for num, _ in main_freq[-25:]]
-    hot_joker = [int(num) for num, _ in joker_freq[:5]]
-    cold_joker = [int(num) for num, _ in joker_freq[-5:]]
+    sorted_main = sorted(main_counter.items(), key=lambda x: x[1], reverse=True)
+    sorted_joker = sorted(joker_counter.items(), key=lambda x: x[1], reverse=True)
 
-    # Αριθμοί που αντιστοιχούν σε γενέθλια (ημέρες και μήνες)
+    hot_main = [int(num) for num, _ in sorted_main[:25]]
+    cold_main = [int(num) for num, _ in sorted_main[-25:]]
+    hot_joker = [int(num) for num, _ in sorted_joker[:5]]
+    cold_joker = [int(num) for num, _ in sorted_joker[-5:]]
+
+    hot_main_weights = [main_counter[num] for num in hot_main]
+    cold_main_weights = [main_counter[num] for num in cold_main]
+    hot_joker_weights = [joker_counter[num] for num in hot_joker]
+    cold_joker_weights = [joker_counter[num] for num in cold_joker]
+
     birthday_numbers = set(range(1, 32)) | set(range(1, 13))
-
-    # Όρια αθροίσματος για αποφυγή ακραίων συνδυασμών
     MIN_SUM = 100
     MAX_SUM = 160
 
     predictions = []
     for _ in range(num_predictions):
         while True:
-            # Ενίσχυση πιθανότητας μη γενεθλιακών αριθμών
             weighted_hot_main = hot_main + [num for num in hot_main if num not in birthday_numbers]
             weighted_cold_main = cold_main + [num for num in cold_main if num not in birthday_numbers]
+            weighted_hot_weights = hot_main_weights + [main_counter[num] for num in hot_main if num not in birthday_numbers]
+            weighted_cold_weights = cold_main_weights + [main_counter[num] for num in cold_main if num not in birthday_numbers]
 
-            selected = sorted(random.sample(weighted_hot_main, 3) + random.sample(weighted_cold_main, 2))
+            selected = sorted(
+                random.choices(weighted_hot_main, weights=weighted_hot_weights, k=3) +
+                random.choices(weighted_cold_main, weights=weighted_cold_weights, k=2)
+            )
             if MIN_SUM <= sum(selected) <= MAX_SUM:
                 break
 
-        joker = random.choice(hot_joker + cold_joker)
+        joker_pool = hot_joker + cold_joker
+        joker_weights = hot_joker_weights + cold_joker_weights
+        joker = random.choices(joker_pool, weights=joker_weights, k=1)[0]
+
         predictions.append((selected, joker))
 
     all_main = [num for combo, _ in predictions for num in combo]

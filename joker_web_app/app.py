@@ -33,10 +33,12 @@ def plot_frequencies(counter, title, filename):
     plt.savefig(f"static/{filename}")
     plt.close()
 
+def get_decade(num):
+    return (num - 1) // 10
+
 def generate_prediction(df, num_predictions=5):
     main_counter, joker_counter = analyze_frequencies(df)
 
-    # Δημιουργία γραφημάτων
     plot_frequencies(main_counter, "Main Number Frequencies", "main_number_frequencies.png")
     plot_frequencies(joker_counter, "Joker Number Frequencies", "joker_number_frequencies.png")
 
@@ -48,16 +50,28 @@ def generate_prediction(df, num_predictions=5):
     hot_joker = [int(num) for num, _ in sorted_joker[:5]]
     cold_joker = [int(num) for num, _ in sorted_joker[-5:]]
 
-    birthday_numbers = set(range(1, 32)) | set(range(1, 13))
     MIN_SUM = 100
     MAX_SUM = 160
 
     predictions = []
     for _ in range(num_predictions):
         while True:
-            selected_main = sorted(random.sample(hot_main, 3) + random.sample(cold_main, 2))
-            selected_main = [int(n) for n in selected_main]
-            if MIN_SUM <= sum(selected_main) <= MAX_SUM:
+            selected_main = []
+            used_decades = set()
+            candidates = hot_main + cold_main
+            random.shuffle(candidates)
+            for num in candidates:
+                decade = get_decade(num)
+                if decade not in used_decades:
+                    selected_main.append(num)
+                    used_decades.add(decade)
+                if len(selected_main) == 5:
+                    break
+            if len(selected_main) < 5:
+                continue
+            selected_main = sorted(selected_main)
+            total_sum = sum(selected_main)
+            if MIN_SUM <= total_sum <= MAX_SUM:
                 break
         selected_joker = int(random.choice(hot_joker + cold_joker))
         predictions.append((selected_main, selected_joker))
@@ -66,6 +80,20 @@ def generate_prediction(df, num_predictions=5):
     all_jokers = [joker for _, joker in predictions]
     final_main = sorted([int(num) for num, _ in Counter(all_main).most_common(5)])
     final_joker = int(Counter(all_jokers).most_common(1)[0][0])
+
+    # Ισορροπία μονών/ζυγών
+    odd_count = sum(1 for n in final_main if n % 2 == 1)
+    even_count = 5 - odd_count
+    if abs(odd_count - even_count) > 2:
+        for num in hot_main + cold_main:
+            if num not in final_main:
+                if odd_count > even_count and num % 2 == 0:
+                    final_main[-1] = num
+                    break
+                elif even_count > odd_count and num % 2 == 1:
+                    final_main[-1] = num
+                    break
+        final_main = sorted(final_main)
 
     return predictions, (final_main, final_joker)
 

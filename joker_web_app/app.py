@@ -53,6 +53,16 @@ def get_rare_single_digits(main_counter, threshold=5):
 def get_low_freq_birthdays(main_counter, threshold=5):
     return {num for num in range(1, 32) if main_counter.get(num, 0) < threshold}
 
+def get_recent_numbers(df, recent_draws=5):
+    recent_df = df.tail(recent_draws)
+    recent_numbers = recent_df[["Num1", "Num2", "Num3", "Num4", "Num5"]].values.flatten()
+    return set(recent_numbers)
+
+def get_average_range_numbers(main_counter, tolerance=10):
+    all_numbers = list(main_counter.keys())
+    avg = sum(all_numbers) / len(all_numbers)
+    return {num for num in all_numbers if abs(num - avg) <= tolerance}
+
 def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None):
     seed = int(hashlib.md5(seed_source.encode()).hexdigest(), 16) % (2**32)
     random.seed(seed)
@@ -76,13 +86,16 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
 
     rare_single_digits = get_rare_single_digits(main_counter)
     low_freq_birthdays = get_low_freq_birthdays(main_counter)
+    recent_numbers = get_recent_numbers(df)
+    average_range_numbers = get_average_range_numbers(main_counter)
 
     for _ in range(num_predictions):
         attempt = 0
         while attempt < 100:
             selected_main = []
             used_decades = Counter()
-            candidates = hot_main + cold_main
+            candidates = hot_main + cold_main + list(recent_numbers) + list(average_range_numbers)
+            candidates = list(set(candidates))
             random.shuffle(candidates)
             for num in candidates:
                 decade = get_decade(num)
@@ -111,13 +124,18 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
                 attempt += 1
                 continue
 
+            if all(num <= 35 for num in selected_main):
+                attempt += 1
+                continue
+
             selected_main = sorted(selected_main)
             total_sum = sum(selected_main)
             if not (MIN_SUM <= total_sum <= MAX_SUM):
                 attempt += 1
                 continue
 
-            selected_joker = int(random.choice(hot_joker + cold_joker))
+            joker_candidates = list(set(hot_joker + cold_joker + list(df["Joker"].tail(5).values)))
+            selected_joker = int(random.choice(joker_candidates))
             combo_key = tuple(selected_main + [selected_joker])
             if combo_key not in seen_combinations:
                 seen_combinations.add(combo_key)
@@ -187,3 +205,4 @@ def index():
 
 if __name__ == '__main__':
     app.run(debug=True)
+

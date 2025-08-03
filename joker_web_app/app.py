@@ -102,7 +102,6 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
     low_freq_birthdays = get_low_freq_birthdays(main_counter)
     recent_numbers = get_recent_numbers(df)
     average_range_numbers = get_average_range_numbers(main_counter)
-    cluster_centers = cluster_draws(df)
 
     kmeans, cluster_centers = cluster_draws(df)
     recent_draws = df[["Num1", "Num2", "Num3", "Num4", "Num5"]].tail(5).values

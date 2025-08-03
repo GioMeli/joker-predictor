@@ -71,6 +71,7 @@ def cluster_draws(df, n_clusters=5):
     kmeans.fit(draws)
     return kmeans, kmeans.cluster_centers_
 
+    kmeans, cluster_centers = cluster_draws(df)
 def find_closest_cluster(kmeans, recent_draws):
     distances = kmeans.transform(recent_draws)
     closest_clusters = np.argmin(distances, axis=1)
@@ -104,8 +105,8 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
     average_range_numbers = get_average_range_numbers(main_counter)
 
     recent_draws = df[["Num1", "Num2", "Num3", "Num4", "Num5"]].tail(5).values
-    _, closest_cluster_numbers_raw = find_closest_cluster(kmeans, recent_draws)
-    closest_cluster_numbers = list(set(closest_cluster_numbers_raw.astype(int)))
+    closest_cluster = find_closest_cluster(kmeans, recent_draws)
+    closest_cluster_numbers = list(set(closest_cluster.astype(int)))
 
     for _ in range(num_predictions):
         attempt = 0

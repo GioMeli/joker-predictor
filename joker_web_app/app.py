@@ -68,7 +68,7 @@ def get_average_range_numbers(main_counter, tolerance=10):
 def cluster_draws(df, n_clusters=5):
     draws = df[["Num1", "Num2", "Num3", "Num4", "Num5"]].values
     kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-    kmeans.fit(draws)
+    return kmeans, kmeans.cluster_centers_
     return kmeans.cluster_centers_
 
 def find_closest_cluster(kmeans, recent_draws):
@@ -103,7 +103,6 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
     recent_numbers = get_recent_numbers(df)
     average_range_numbers = get_average_range_numbers(main_counter)
 
-    kmeans, cluster_centers = cluster_draws(df)
     recent_draws = df[["Num1", "Num2", "Num3", "Num4", "Num5"]].tail(5).values
     closest_cluster = find_closest_cluster(kmeans, recent_draws)
     closest_cluster_numbers = list(set(closest_cluster.astype(int)))
@@ -217,7 +216,6 @@ def index():
                            main_chart="main_number_frequencies.png",
                            joker_chart="joker_number_frequencies.png",
                            accuracy=accuracy_report)
-
 
 if __name__ == '__main__':
     app.run(debug=True)

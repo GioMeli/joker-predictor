@@ -68,14 +68,14 @@ def get_average_range_numbers(main_counter, tolerance=10):
 def cluster_draws(df, n_clusters=5):
     draws = df[["Num1", "Num2", "Num3", "Num4", "Num5"]].values
     kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+    kmeans.fit(draws)
     return kmeans, kmeans.cluster_centers_
-    return kmeans.cluster_centers_
 
 def find_closest_cluster(kmeans, recent_draws):
     distances = kmeans.transform(recent_draws)
     closest_clusters = np.argmin(distances, axis=1)
     most_common_cluster = Counter(closest_clusters).most_common(1)[0][0]
-    return kmeans.cluster_centers_[most_common_cluster]
+    return kmeans, kmeans.cluster_centers_
 
 def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None):
     seed = int(hashlib.md5(seed_source.encode()).hexdigest(), 16) % (2**32)

@@ -124,6 +124,7 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
     closest_cluster_numbers = list(set(int(num) for row in cluster_centers_raw for num in row))
 
     correlated_numbers = get_correlated_numbers(df)
+    position_rule_numbers = [1, 2, 3, 5, 9, 10, 11, 13, 16, 17, 18, 19, 20, 21, 24, 26, 28, 34, 39, 41, 42, 43, 44, 45]
 
     for _ in range(num_predictions):
         attempt = 0
@@ -131,6 +132,7 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
             selected_main = []
             used_decades = Counter()
             candidates = hot_main + cold_main + list(recent_numbers) + list(average_range_numbers) + closest_cluster_numbers + list(correlated_numbers)
+    candidates += position_rule_numbers
             for center in cluster_centers:
                 candidates += list(center.astype(int))
             candidates = list(set(candidates))

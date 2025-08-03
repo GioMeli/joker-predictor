@@ -91,15 +91,6 @@ def get_correlated_numbers(df, top_n=20):
     for pair, _ in top_pairs:
         correlated_numbers.update(pair)
     return correlated_numbers
-    
-    def get_top_pairs(df, top_n=20):
-    draws = df[["Num1", "Num2", "Num3", "Num4", "Num5"]].values.tolist()
-    pair_counter = Counter()
-    for draw in draws:
-        for pair in combinations(sorted(draw), 2):
-            pair_counter[pair] += 1
-    top_pairs = pair_counter.most_common(top_n)
-    return [pair for pair, _ in top_pairs]
 
 def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None):
     seed = int(hashlib.md5(seed_source.encode()).hexdigest(), 16) % (2**32)
@@ -133,7 +124,6 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
     closest_cluster_numbers = list(set(int(num) for row in cluster_centers_raw for num in row))
 
     correlated_numbers = get_correlated_numbers(df)
-    top_pairs = get_top_pairs(df)
 
     for _ in range(num_predictions):
         attempt = 0
@@ -145,20 +135,6 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
                 candidates += list(center.astype(int))
             candidates = list(set(candidates))
             random.shuffle(candidates)
-            
-            # Προσπάθεια να τοποθετηθούν μαζί τα ζεύγη
-for pair in top_pairs:
-    if pair[0] in candidates and pair[1] in candidates:
-        if pair[0] not in selected_main and pair[1] not in selected_main:
-            decade0 = get_decade(pair[0])
-            decade1 = get_decade(pair[1])
-            if used_decades[decade0] < 2 and used_decades[decade1] < 2:
-                selected_main.extend([pair[0], pair[1]])
-                used_decades[decade0] += 1
-                used_decades[decade1] += 1
-                if len(selected_main) >= 5:
-                    break
-
             for num in candidates:
                 decade = get_decade(num)
                 if used_decades[decade] < 2:

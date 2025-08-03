@@ -71,6 +71,12 @@ def cluster_draws(df, n_clusters=5):
     kmeans.fit(draws)
     return kmeans.cluster_centers_
 
+def find_closest_cluster(kmeans, recent_draws):
+    distances = kmeans.transform(recent_draws)
+    closest_clusters = np.argmin(distances, axis=1)
+    most_common_cluster = Counter(closest_clusters).most_common(1)[0][0]
+    return kmeans.cluster_centers_[most_common_cluster]
+
 def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None):
     seed = int(hashlib.md5(seed_source.encode()).hexdigest(), 16) % (2**32)
     random.seed(seed)
@@ -98,12 +104,17 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
     average_range_numbers = get_average_range_numbers(main_counter)
     cluster_centers = cluster_draws(df)
 
+    kmeans, cluster_centers = cluster_draws(df)
+    recent_draws = df[["Num1", "Num2", "Num3", "Num4", "Num5"]].tail(5).values
+    closest_cluster = find_closest_cluster(kmeans, recent_draws)
+    closest_cluster_numbers = list(set(closest_cluster.astype(int)))
+
     for _ in range(num_predictions):
         attempt = 0
         while attempt < 100:
             selected_main = []
             used_decades = Counter()
-            candidates = hot_main + cold_main + list(recent_numbers) + list(average_range_numbers)
+            candidates = hot_main + cold_main + list(recent_numbers) + list(average_range_numbers) + closest_cluster_numbers
             for center in cluster_centers:
                 candidates += list(center.astype(int))
             candidates = list(set(candidates))

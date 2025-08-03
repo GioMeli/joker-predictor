@@ -79,6 +79,19 @@ def find_closest_cluster(kmeans, recent_draws):
     most_common_cluster = Counter(closest_clusters).most_common(1)[0][0]
     return kmeans, kmeans.cluster_centers_
 
+
+def get_correlated_numbers(df, top_n=20):
+    draws = df[["Num1", "Num2", "Num3", "Num4", "Num5"]].values.tolist()
+    pair_counter = Counter()
+    for draw in draws:
+        for pair in combinations(sorted(draw), 2):
+            pair_counter[pair] += 1
+    top_pairs = pair_counter.most_common(top_n)
+    correlated_numbers = set()
+    for pair, _ in top_pairs:
+        correlated_numbers.update(pair)
+    return correlated_numbers
+
 def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None):
     seed = int(hashlib.md5(seed_source.encode()).hexdigest(), 16) % (2**32)
     random.seed(seed)
@@ -103,6 +116,7 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
     rare_single_digits = get_rare_single_digits(main_counter)
     low_freq_birthdays = get_low_freq_birthdays(main_counter)
     recent_numbers = get_recent_numbers(df)
+    correlated_numbers = get_correlated_numbers(df)
     average_range_numbers = get_average_range_numbers(main_counter)
 
     recent_draws = df[["Num1", "Num2", "Num3", "Num4", "Num5"]].tail(5).values
@@ -116,7 +130,7 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
         while attempt < 100:
             selected_main = []
             used_decades = Counter()
-            candidates = hot_main + cold_main + list(recent_numbers) + list(average_range_numbers) + closest_cluster_numbers
+candidates = hot_main + cold_main + list(recent_numbers) + list(average_range_numbers) + closest_cluster_number + list(correlated_numbers)
             for center in cluster_centers:
                 candidates += list(center.astype(int))
             candidates = list(set(candidates))

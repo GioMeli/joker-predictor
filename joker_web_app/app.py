@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from flask import Flask, request, render_template
 from collections import Counter
 from sklearn.cluster import KMeans
+from sklearn.cluster import kmeans
 import numpy as np
 
 app = Flask(__name__)

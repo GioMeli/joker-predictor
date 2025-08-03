@@ -9,6 +9,7 @@ from flask import Flask, request, render_template
 from collections import Counter
 from sklearn.cluster import KMeans
 import numpy as np
+from itertools import combinations
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -79,7 +80,6 @@ def find_closest_cluster(kmeans, recent_draws):
     most_common_cluster = Counter(closest_clusters).most_common(1)[0][0]
     return kmeans, kmeans.cluster_centers_
 
-
 def get_correlated_numbers(df, top_n=20):
     draws = df[["Num1", "Num2", "Num3", "Num4", "Num5"]].values.tolist()
     pair_counter = Counter()
@@ -116,21 +116,21 @@ def generate_prediction(df, num_predictions=5, seed_source="", actual_draw=None)
     rare_single_digits = get_rare_single_digits(main_counter)
     low_freq_birthdays = get_low_freq_birthdays(main_counter)
     recent_numbers = get_recent_numbers(df)
-    correlated_numbers = get_correlated_numbers(df)
     average_range_numbers = get_average_range_numbers(main_counter)
 
     recent_draws = df[["Num1", "Num2", "Num3", "Num4", "Num5"]].tail(5).values
-    # Δημιουργία των clusters
     kmeans, cluster_centers = cluster_draws(df)
-    recent_draws = df[["Num1", "Num2", "Num3", "Num4", "Num5"]].tail(5).values
     _, cluster_centers_raw = find_closest_cluster(kmeans, recent_draws)
     closest_cluster_numbers = list(set(int(num) for row in cluster_centers_raw for num in row))
+
+    correlated_numbers = get_correlated_numbers(df)
+
     for _ in range(num_predictions):
         attempt = 0
         while attempt < 100:
             selected_main = []
             used_decades = Counter()
-candidates = hot_main + cold_main + list(recent_numbers) + list(average_range_numbers) + closest_cluster_number + list(correlated_numbers)
+            candidates = hot_main + cold_main + list(recent_numbers) + list(average_range_numbers) + closest_cluster_numbers + list(correlated_numbers)
             for center in cluster_centers:
                 candidates += list(center.astype(int))
             candidates = list(set(candidates))
@@ -222,7 +222,7 @@ def index():
             df = load_data(filepath)
             seed_source = file.filename
         else:
-            df = load_data("data/joker_results_updated.csv")
+            df = load_data("joker_results_2.csv")
             seed_source = "default"
         actual_draw = ([2, 10, 16, 21, 40], 15)
         predictions, final_combination, accuracy_report = generate_prediction(

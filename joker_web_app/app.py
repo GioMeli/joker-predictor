@@ -2,6 +2,8 @@ import os
 import hashlib
 import random
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from flask import Flask, request, render_template
 from collections import Counter
